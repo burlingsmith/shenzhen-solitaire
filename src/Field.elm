@@ -1,4 +1,10 @@
-module Field exposing (..)
+module Field exposing
+    ( Field, Point, Dims, NodeTuple
+    , new, fromList
+    , set, get, clear
+    , numRows, numCols, contains
+    , compose
+    )
 {-| A uniform grid of nodes to attach Collage graphics to -}
 
 
@@ -18,14 +24,17 @@ import Collage.Layout
 -- Representation
 ------------------------------------------------------------------------------
 
-{-| Dimensions in (x, y) format -}
-type alias Dims = (Int, Int)
+{-| Evenly-spaced grid of nodes -}
+type alias Field msg data =
+    { grid    : Grid msg data  -- field of nodes
+    , dims    : Dims           -- row/col counts (not indexes)
+    , spacing : Float          -- row/col pixel spacings
+    }
 
-{-| Position within a grid -}
-type alias Point = (Int, Int)
-
-{-| Tuple containing the elements of a node -}
-type alias NodeTuple msg data = (Point, Collage msg, data)
+type alias Grid msg data  -- if refactor, would actually be
+    = Dict Int            -- Grid (Node msg data)
+        (Dict Int         -- for more generic 2D grid
+            (Maybe (Node msg data)))
 
 {-| Positioned collage element -}
 type alias Node msg data =
@@ -34,17 +43,14 @@ type alias Node msg data =
     , data     : data         -- any additional data stored with the node
     }
 
-{-| Evenly-spaced grid of nodes -}
-type alias Field msg data =
-    { grid    : Grid msg data  -- field of nodes
-    , dims    : Dims           -- row/col counts (not indexes)
-    , spacing : Float          -- row/col pixel spacings
-    }
+{-| Tuple containing the elements of a node -}
+type alias NodeTuple msg data = (Point, Collage msg, data)
 
-type alias Grid msg data
-    = Dict Int
-        (Dict Int
-            (Maybe (Node msg data)))
+{-| Dimensions in (x, y) format -}
+type alias Dims = (Int, Int)
+
+{-| Position within a grid -}
+type alias Point = (Int, Int)
 
 
 ------------------------------------------------------------------------------
@@ -55,10 +61,10 @@ type alias Grid msg data
 forceGet : Dict comparable v -> comparable -> v
 forceGet dict key =
     case Dict.get key dict of
-        Nothing ->
-            Debug.todo "forceGet: bad key"
         Just value ->
             value
+        Nothing ->
+            Debug.todo "forceGet: bad key"
 
 
 ------------------------------------------------------------------------------
@@ -85,11 +91,10 @@ new (r, c) spacing =
 
 fromList : Dims -> Float -> List (NodeTuple msg data) -> Field msg data
 fromList dims spacing list =
-    List.foldl fromList_ (new dims spacing) list
-
-fromList_ : NodeTuple msg data -> Field msg data -> Field msg data
-fromList_ (pos, content, data) field =
-    set field pos content data
+    let
+        foldingFxn (pos, content, data) field = set field pos content data
+    in
+        List.foldl foldingFxn (new dims spacing) list
 
 
 ------------------------------------------------------------------------------
@@ -98,22 +103,20 @@ fromList_ (pos, content, data) field =
 
 {-| Set a node's contents and data within a field, if the node is valid -}
 set : Field msg data -> Point -> Collage msg -> data -> Field msg data
-set field pt content data =
-    if contains field pt then
+set field pos content data =
+    if contains field pos then
         let
-            node = { position = pt, content = content, data = data }
+            node = { position = pos, content = content, data = data }
         in
-            { field | grid = set_ field.grid pt (Just node) }
+            { field | grid = set_ field.grid pos (Just node) }
     else
         field
 
 set_ : Grid msg data -> Point -> Maybe (Node msg data) -> Grid msg data
 set_ grid (r, c) node =
-    let
-        row = forceGet grid r
-        col = Dict.insert c node row
-    in
-        Dict.insert r col grid
+    forceGet grid r
+    |> (\row -> Dict.insert c node row)
+    |> (\col -> Dict.insert r col grid)
 
 {-| Retrieve the contents and data from a node within a field, if the node
 exists
@@ -134,9 +137,9 @@ get field (r, c) =
 
 -}
 clear : Field msg data -> Point -> Field msg data
-clear field pt =
-    if contains field pt then
-        { field | grid = set_ field.grid pt Nothing }
+clear field pos =
+    if contains field pos then
+        { field | grid = set_ field.grid pos Nothing }
     else
         field
 
