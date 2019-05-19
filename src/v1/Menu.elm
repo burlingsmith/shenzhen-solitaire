@@ -45,9 +45,9 @@ type Entry msg data =
 {-| A collection of menu entries -}
 type Menu msg data =
     Menu_
-        { entries  : List (Entry msg data)
-        , length   : Int
-        , sizing   : Sizing
+        { entries : List (Entry msg data)
+        , length  : Int
+        , sizing  : Sizing
         }
 
 
