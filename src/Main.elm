@@ -18,11 +18,12 @@ import Platform.Sub
 import Collage exposing (Collage)
 import Collage.Render
 import Collage.Events
+import Collage.Layout
 import Color
 
 ----{ Stuff what is being tested
+import Shenzen.Card as Card exposing (Card, Suit, Face)
 import Field exposing (Field)
-
 
 ------------------------------------------------------------------------------
 -- Boilerplate
@@ -45,16 +46,13 @@ init () =
 
 view : Model -> Html Msg
 view model =
-    Field.compose model
+    Field.render pFxn model
+    |> Collage.Layout.center
     |> Collage.Render.svg
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
-    case msg of
-        ClickedPoint pt ->
-            clickPoint model pt
-        _ ->
-            Debug.todo "implement"
+    (model, Cmd.none)
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
@@ -65,55 +63,47 @@ subscriptions model =
 -- Testing
 ------------------------------------------------------------------------------
 
-type Msg
-    = ClickedPoint (Int, Int)  -- row and column of the point clicked
-    | MouseEnter (Int, Int)
-    | MouseLeave (Int, Int)
-    | Nil
+type Msg = ClickedCard
 
-type Status = Blank | Light
+type alias Data = Int
 
-type alias Model = Field Msg Status
+type alias Index = (Int, Int)
 
-blankPoint : (Int, Int) -> Collage Msg
-blankPoint pt =
-    Collage.circle 5
-    |> Collage.filled (Collage.uniform Color.red)
-    |> Collage.Events.onClick (ClickedPoint pt)
+type alias Model = Field Msg Data
 
-lightPoint : (Int, Int) -> Collage Msg
-lightPoint pt =
-    Collage.circle 7
-    |> Collage.filled (Collage.uniform Color.green)
-    |> Collage.Events.onClick (ClickedPoint pt)
+pFxn : Field.Node Msg Data -> Int
+pFxn node =
+    case Field.nodeData node of
+        Nothing ->
+            0
+        Just faceValue ->
+            faceValue
 
 initModel : Model
 initModel =
     let
-        lf pt = (pt, lightPoint pt, Light)
-        bf pt = (pt, blankPoint pt, Blank)
-        points =
-            [ lf (1, 1)
-            , lf (1, 7)
-            , lf (7, 1)
-            , lf (7, 7)
-            , bf (4, 3)
-            , bf (5, 2)
-            , bf (5, 4)
-            , bf (4, 5)
-            , bf (5, 6)
+        f pos suit val =
+            let
+                card =
+                    Card.new suit (Card.Num val)
+                    |> Card.toCollage
+                    |> Collage.scale 0.5
+            in
+                (pos, card, val)
+        cards =
+            [ f (1, 1) Card.Red 1
+            , f (1, 2) Card.Red 2
+            , f (1, 3) Card.Red 3
+            , f (2, 1) Card.Black 4
+            , f (2, 2) Card.Black 5
+            , f (2, 3) Card.Black 6
+            , f (3, 1) Card.Green 7
+            , f (3, 2) Card.Green 8
+            , f (3, 3) Card.Green 9
             ]
     in
-        Field.fromList (7, 7) 15 points
-
-clickPoint : Model -> (Int, Int) -> (Model, Cmd Msg)
-clickPoint model pt =
-    case Field.get model pt of
-        Nothing ->
-            (model, Cmd.none)
-        Just (_, status) ->
-            case status of
-                Blank ->
-                    (Field.clear model pt, Cmd.none)
-                Light ->
-                    (Field.set model pt (blankPoint pt) Blank, Cmd.none)
+        case Field.fromList (3, 3) 100 cards of
+            Just model ->
+                model
+            Nothing ->
+                Debug.todo "initModel: field generation failed"
