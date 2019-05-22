@@ -1,109 +1,214 @@
-module Main exposing (..)
-{-| Module for debugging only -}
+module Main exposing (main)
+{-| Shenzhen Solitaire in Elm -}
 
 
 ------------------------------------------------------------------------------
 -- Dependencies
 ------------------------------------------------------------------------------
 
-----{ Random shit
-import Html exposing (Html)
-import Html.Events
-import Time exposing (Posix)
+----{ Core
 import Browser
+import Html exposing (Html)
+
+----{ Structures
+import Shenzhen.Board as Board exposing (Board)
+import Shenzhen.Deck as Deck exposing (Stack)
+
+----{ Events
 import Browser.Events
 import Json.Decode as Decode exposing (Decoder)
+
+----{ Randomness
 import Random
-import Platform.Sub
-import Collage exposing (Collage)
-import Collage.Render
-import Collage.Events
-import Collage.Layout
-import Color
 
-----{ Stuff what is being tested
-import Shenzen.Card as Card exposing (Card, Suit, Face)
-import Field exposing (Field)
+----{ Time
+import Time exposing (Posix)
+import Clock exposing (Clock)
+
 
 ------------------------------------------------------------------------------
--- Boilerplate
+-- Main
 ------------------------------------------------------------------------------
 
+{-| -}
 type alias Flags = ()
 
-main : Program Flags Model Msg
-main =
-  Browser.element
-    { init = init
-    , view = view
-    , update = update
-    , subscriptions = subscriptions
-    }
 
+{-| Initializer -}
 init : Flags -> (Model, Cmd Msg)
 init () =
     (initModel, Cmd.none)
 
-view : Model -> Html Msg
-view model =
-    Field.render pFxn model
-    |> Collage.Layout.center
-    |> Collage.Render.svg
 
-update : Msg -> Model -> (Model, Cmd Msg)
-update msg model =
-    (model, Cmd.none)
+{-| Shenzhen Solitaire in Elm -}
+main : Program Flags Model Msg
+main =
+    Browser.element
+        { init = init
+        , view = view
+        , update = update
+        , subscriptions = subscriptions
+        }
+
+
+------------------------------------------------------------------------------
+-- Model
+------------------------------------------------------------------------------
+
+{-| -}
+type alias Model =
+    { status : GameState    -- Gamestate
+    , board  : Board        -- Current state of the game board
+    , record : GameHistory  -- Prior win/loss count
+    , clock  : Clock        -- Duration the current round has been running
+    }
+
+
+{-| -}
+type alias GameHistory =
+    { wins   : Int
+    , losses : Int
+    }
+
+
+{-| -}
+type GameState
+    = Inactive
+    | Active
+    | Paused
+    | Won
+    | Lost
+
+
+{-| -}
+initModel : Model
+initModel =
+    { status = Inactive
+    , board = Debug.todo "Board.new"
+    , record = { wins = 0, losses = 0 }
+    , clock = Clock.fromInt 0
+    }
+
+
+{-| Add a loss to the game history -}
+addLoss : GameHistory -> GameHistory
+addLoss record =
+    { record | losses = record.losses + 1 }
+
+
+{-| Add a win to the game history -}
+addWin : GameHistory -> GameHistory
+addWin record =
+    { record | wins = record.wins + 1 }
+
+
+------------------------------------------------------------------------------
+-- Controller
+------------------------------------------------------------------------------
+
+type Msg
+    = Tick Posix
+    | TogglePause
+    | NewGame GameState
+    | Deal Stack
+    | Nil
+
+
+----{ Subscriptions
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Sub.none
+    Sub.batch
+        [ Browser.Events.onKeyDown (keyDecoder model)
+        , Time.every (toFloat Clock.second) Tick
+        ]
 
 
-------------------------------------------------------------------------------
--- Testing
-------------------------------------------------------------------------------
-
-type Msg = ClickedCard
-
-type alias Data = Int
-
-type alias Index = (Int, Int)
-
-type alias Model = Field Msg Data
-
-pFxn : Field.Node Msg Data -> Int
-pFxn node =
-    case Field.nodeData node of
-        Nothing ->
-            0
-        Just faceValue ->
-            faceValue
-
-initModel : Model
-initModel =
+keyDecoder : Model -> Decoder Msg
+keyDecoder model =
     let
-        f pos suit val =
-            let
-                card =
-                    Card.new suit (Card.Num val)
-                    |> Card.toCollage
-                    |> Collage.scale 0.5
-            in
-                (pos, card, val)
-        cards =
-            [ f (1, 1) Card.Red 1
-            , f (1, 2) Card.Red 2
-            , f (1, 3) Card.Red 3
-            , f (2, 1) Card.Black 4
-            , f (2, 2) Card.Black 5
-            , f (2, 3) Card.Black 6
-            , f (3, 1) Card.Green 7
-            , f (3, 2) Card.Green 8
-            , f (3, 3) Card.Green 9
-            ]
+        decoder key =
+            if (key == "Escape" || key == " ") then
+                TogglePause
+            else if (key == "r" || key == "R") then
+                NewGame model.status
+            else
+                Nil
     in
-        case Field.fromList (3, 3) 100 cards of
-            Just model ->
-                model
-            Nothing ->
-                Debug.todo "initModel: field generation failed"
+        Decode.map decoder (Decode.field "key" Decode.string)
+
+
+----{ Messages
+
+update : Msg -> Model -> (Model, Cmd Msg)
+update msg model =
+    case msg of
+        Deal deck ->
+            handleDeal model deck
+        NewGame status ->
+            handleNewGame model status
+        Tick posix ->
+            handleTick model posix
+        TogglePause ->
+            handleTogglePause model
+        _ ->
+            (model, Cmd.none)
+
+
+{-| Deal < Shenzhen.Deck.Stack > -}
+handleDeal : Model -> Stack -> (Model, Cmd Msg)
+handleDeal model deck =
+    Tuple.pair { model | board = Board.deal deck } Cmd.none
+
+
+{-| NewGame < GameState > -}
+handleNewGame : Model -> GameState -> (Model, Cmd Msg)
+handleNewGame model status =
+    let
+        newModel =
+            case status of
+                Won ->
+                    { model | record = addWin model.record }
+                Inactive ->
+                    model
+                _ ->
+                    { model | record = addLoss model.record }
+        dealCmd =
+            Random.generate Deal (Deck.shuffle Deck.full)
+    in
+        (newModel, dealCmd)
+
+
+{-| Tick < Time.Posix > -}
+handleTick : Model -> Posix -> (Model, Cmd Msg)
+handleTick model _ =
+    case model.status of
+        Active ->
+            let
+                newClock = Clock.advance model.clock Clock.second
+            in
+                Tuple.pair { model | clock = newClock } Cmd.none
+        _ ->
+            (model, Cmd.none)
+
+
+{-| TogglePause -}
+handleTogglePause : Model -> (Model, Cmd Msg)
+handleTogglePause model =
+    case model.status of
+        Active ->
+            Tuple.pair { model | status = Paused } Cmd.none
+        Paused ->
+            Tuple.pair { model | status = Active } Cmd.none
+        _ ->
+            (model, Cmd.none)
+
+
+------------------------------------------------------------------------------
+-- View
+------------------------------------------------------------------------------
+
+{-| -}
+view : Model -> Html Msg
+view model =
+    Debug.todo "implement"

@@ -1,5 +1,5 @@
 module Field exposing
-    ( Field, Node
+    ( Field, Node, NodeTup
     , new, fromList
     , set, setSpacing, clear
     , get, getSpacing, size, nodePos, nodeContent, nodeData
@@ -45,7 +45,6 @@ type alias Precedence = Int
 
 {-| -}
 type alias Evaluator msg data = (Node msg data -> Precedence)
-
 
 ------------------------------------------------------------------------------
 -- Utility

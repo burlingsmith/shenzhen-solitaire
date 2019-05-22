@@ -10,68 +10,21 @@ module Main exposing (main)
 import Html exposing (Html)
 import Html.Events
 import Time exposing (Posix)
-import Browser
-import Browser.Events
-import Json.Decode as Decode exposing (Decoder)
 import Random
 
 ----{ Local
 import Menu
 import Clock exposing (Clock)
-import Deck exposing (Stack)
 import Board exposing (Board)
 import Banner
 
 
-------------------------------------------------------------------------------
--- Constants
-------------------------------------------------------------------------------
-
-
-------------------------------------------------------------------------------
--- Main
-------------------------------------------------------------------------------
-
-{-| Configuration flags -}
-type alias Flags = ()
-
-{-| Configure the session -}
-init : Flags -> (Model, Cmd Msg)
-init () =
-    (initModel, Cmd.none)
-
-main : Program Flags Model Msg
-main =
-  Browser.element
-    { init = init
-    , view = view
-    , update = update
-    , subscriptions = subscriptions
-    }
 
 
 ------------------------------------------------------------------------------
 -- Model
 ------------------------------------------------------------------------------
 
-{-| -}
-type GameState
-    = Inactive  -- The game is awaiting a reset
-    | Active    -- The user is currently playing a game
-    | Paused    -- The user has paused the game
-    | Won       -- The user has won a game
-    | Lost      -- The user has lost a game
-
-{-| -}
-type alias Model =
-    { wouldBeAction : String
-    , timeElapsed : Clock
-    , gameState : GameState
-    , wins : Int
-    , losses : Int
-    , deck : Stack  -- temp
-    , board : Board
-    }
 
 {-| Initial model -}
 initModel : Model
@@ -117,11 +70,6 @@ type Msg
 
 ----{ Decoders
 
-{-| Determine which key was pressed -}
-keyDecoder : Decoder Msg
-keyDecoder =
-    Decode.map keyDecoder_ (Decode.field "key" Decode.string)
-
 keyDecoder_ : String -> Msg
 keyDecoder_ key =
     if (key == "Escape" || key == " ") then
@@ -132,32 +80,7 @@ keyDecoder_ key =
         Nil
 
 
-----{ Subscriptions
-
-{-| Generate event messages -}
-subscriptions : Model -> Sub Msg
-subscriptions model =
-    Sub.batch
-        [ Browser.Events.onKeyDown keyDecoder
-        , Time.every (toFloat Clock.second) (\_ -> Tick)
-        ]
-
-
 ----{ Controller
-
-tmpFxn : Stack -> String
-tmpFxn stack =
-    case stack of
-        [] ->
-            "Empty"
-        card::_ ->
-            case card.value of
-                Deck.Dragon ->
-                    "Dragon"
-                Deck.Flower ->
-                    "Flower"
-                Deck.Num n ->
-                    n |> String.fromInt
 
 {-| Update the model in response to event messages -}
 update : Msg -> Model -> (Model, Cmd Msg)

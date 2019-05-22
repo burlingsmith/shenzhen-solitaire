@@ -1,10 +1,6 @@
 module Clock exposing
     ( Clock
-    , millisecond
-    , second
-    , minute
-    , hour
-    , day
+    , millisecond, second, minute, hour, day
     , fromInt
     , advance
     )
@@ -17,12 +13,12 @@ module Clock exposing
 
 {-| Represent the components of a duration seperately -}
 type alias Clock =
-    { ms  : Int  -- milliseconds
-    , sec : Int  -- seconds
-    , min : Int  -- minutes
-    , h  : Int  -- hours
-    , d   : Int  -- days
-    , abs : Int  -- total number of milliseconds
+    { ms   : Int  -- milliseconds
+    , sec  : Int  -- seconds
+    , min  : Int  -- minutes
+    , hour : Int  -- hours
+    , day  : Int  -- days
+    , abs  : Int  -- total number of milliseconds
     }
 
 
@@ -59,14 +55,13 @@ day = 86400000
 fromInt : Int -> Clock
 fromInt abs =
     let
-        getClockValue a b =
-            (modBy a abs) // b
+        getClockValue a b = (modBy a abs) // b
     in
         { ms = modBy second abs
         , sec = getClockValue minute second
         , min = getClockValue hour minute
-        , h = getClockValue day hour
-        , d = abs // day
+        , hour = getClockValue day hour
+        , day = abs // day
         , abs = abs
         }
 
