@@ -1,8 +1,9 @@
 # Shenzhen Solitaire
 
-Shenzhen Solitaire (from Zachtronics' _SHENZHEN I/O_ and _SHENZHEN SOLITAIRE_), written in Elm.
+Shenzhen Solitaire - from Zachtronics' _SHENZHEN I/O_ and _SHENZHEN SOLITAIRE_ - written in Elm for my Functional Programming
+project at the University of Chicago, Spring 2019.
 
-Written for my Functional Programming project at the University of Chicago, Spring 2019.
+Code last updated for Elm 0.19.
 
 
 ## Game
@@ -30,13 +31,37 @@ Long version:
 
 ## Code
 
-### 3rd-Party Dependencies
+### Modules
 
-**[Random.List (3.1.0)](https://package.elm-lang.org/packages/elm-community/random-extra/latest/).** The Random.List module is
-part of the elm-community/random-extra library, and is used by my project to shuffle the game deck before it is initially
-dealt.
+**Clock (1.0.0) -** Contains a simple record storing milliseconds, seconds, and so on as distinct values, as well as several
+constants for units of time designed to improve readability.
+
+**Extended.List (1.0.0) -** Expands upon the operations defined in Elm's core List library.
+
+**Field (1.0.0) -** An API for working with collages in a straighforward fashion. Fields are grids of collage messages and
+metadata, spaced evenly by some pixel value. Rendering and event processing is simplified for collages in the field.
+
+**Grid (1.0.0) -** A two-dimensional array in Elm.
+
+**Shenzhen.Board (1.0.0) -** Model for the Shenzhen Solitaire board.
+
+**Shenzhen.Card (1.0.0) -** Model for a single Shenzhen Solitaire card.
+
+**Shenzhen.Deck (1.0.0) -** Model for stacked Shenzhen Solitaire cards.
+
+### Dependencies
+
+**[Collage (2.0.1)](https://package.elm-lang.org/packages/timjs/elm-collage/latest/Collage) -** Graphics library.
+
+**[Random.List (3.1.0)](https://package.elm-lang.org/packages/elm-community/random-extra/latest/) -** Randomization functions
+for lists.
 
 
-### Personal Style Guide
+## Personal Style Guide
 
 For unspecified cases, style rules default to the [Official Elm Style Guide](https://elm-lang.org/docs/style-guide).
+
+
+## Notes
+
+- Project uses semantic versioning
