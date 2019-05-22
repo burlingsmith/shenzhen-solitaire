@@ -61,11 +61,16 @@ for lists.
 
 For unspecified cases, style rules default to the [Official Elm Style Guide](https://elm-lang.org/docs/style-guide).
 
-### Line Length
+### Basics
 
 - Lines are not to exceed 79 characters in length
+- Indent to 4 spaces
+- No hard tabs
 
 ### Organization
+
+- If the following sections appear, they should do so in this order (top to bottom): imports, types and type aliases, global
+constants, model, update, view.
 
 ### Headers
 
@@ -80,7 +85,10 @@ should be more specific and offer context or grouping. Only the first word is ca
 ### Sample
 
 ```Elm
-module Example exposing (..)
+module Example exposing
+    ( Record
+    , fxn1, fxn2
+    )
 {-| Example -}
 
 
