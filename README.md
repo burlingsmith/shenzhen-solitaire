@@ -61,6 +61,48 @@ for lists.
 
 For unspecified cases, style rules default to the [Official Elm Style Guide](https://elm-lang.org/docs/style-guide).
 
+### Line Length
+
+- Lines are not to exceed 79 characters in length
+
+### Organization
+
+### Headers
+
+- Section headers consist of three lines, as shown below. Section titles are to use '&' instead of 'and', and are capitalized
+in accordance with Chicago Manual of Style title rules. They are always preceded by exactly two blank lines and are always
+followed by exactly one blank line. The top and bottom lines are 79 dashes. These titles should be broad but informative.
+
+- Subheaders consist of four dashes and an open curly brace. They are to be preceeded by two empty lines and one blank line,
+save in the case of imports, in which case they are preceded by one blank line and followed by no blank lines. These titles
+should be more specific and offer context or grouping. Only the first word is capitalized.
+
+### Sample
+
+```Elm
+module Example exposing (..)
+{-| Example -}
+
+
+------------------------------------------------------------------------------
+-- Dependencies
+------------------------------------------------------------------------------
+
+----{ Graphics
+import Collage
+import Collage.Layout
+
+----{ Randomness
+import Random.List as RList
+
+
+------------------------------------------------------------------------------
+--
+------------------------------------------------------------------------------
+
+
+```
+
 
 ## Notes
 
