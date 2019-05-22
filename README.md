@@ -33,27 +33,27 @@ Long version:
 
 ### Modules
 
-**Clock (1.0.0) -** Contains a simple record storing milliseconds, seconds, and so on as distinct values, as well as several
+- **Clock (1.0.0) -** Contains a simple record storing milliseconds, seconds, and so on as distinct values, as well as several
 constants for units of time designed to improve readability.
 
-**Extended.List (1.0.0) -** Expands upon the operations defined in Elm's core List library.
+- **Extended.List (1.0.0) -** Expands upon the operations defined in Elm's core List library.
 
-**Field (1.0.0) -** An API for working with collages in a straighforward fashion. Fields are grids of collage messages and
+- **Field (1.0.0) -** An API for working with collages in a straighforward fashion. Fields are grids of collage messages and
 metadata, spaced evenly by some pixel value. Rendering and event processing is simplified for collages in the field.
 
-**Grid (1.0.0) -** A two-dimensional array in Elm.
+- **Grid (1.0.0) -** A two-dimensional array in Elm.
 
-**Shenzhen.Board (1.0.0) -** Model for the Shenzhen Solitaire board.
+- **Shenzhen.Board (1.0.0) -** Model for the Shenzhen Solitaire board.
 
-**Shenzhen.Card (1.0.0) -** Model for a single Shenzhen Solitaire card.
+- **Shenzhen.Card (1.0.0) -** Model for a single Shenzhen Solitaire card.
 
-**Shenzhen.Deck (1.0.0) -** Model for stacked Shenzhen Solitaire cards.
+- **Shenzhen.Deck (1.0.0) -** Model for stacked Shenzhen Solitaire cards.
 
 ### Dependencies
 
-**[Collage (2.0.1)](https://package.elm-lang.org/packages/timjs/elm-collage/latest/Collage) -** Graphics library.
+- **[Collage (2.0.1)](https://package.elm-lang.org/packages/timjs/elm-collage/latest/Collage) -** Graphics library.
 
-**[Random.List (3.1.0)](https://package.elm-lang.org/packages/elm-community/random-extra/latest/) -** Randomization functions
+- **[Random.List (3.1.0)](https://package.elm-lang.org/packages/elm-community/random-extra/latest/) -** Randomization functions
 for lists.
 
 
