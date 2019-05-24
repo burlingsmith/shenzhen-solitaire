@@ -33,7 +33,6 @@ import Clock exposing (Clock)
 {-| -}
 type alias Flags = ()
 
-
 {-| Initializer -}
 init : Flags -> (Model, Cmd Msg)
 init () =
@@ -59,6 +58,7 @@ main =
 type alias Model =
     { status : GameState    -- Gamestate
     , board  : Board        -- Current state of the game board
+    , held   : Maybe Stack  -- Any held cards
     , record : GameHistory  -- Prior win/loss count
     , clock  : Clock        -- Duration the current round has been running
     }
@@ -84,7 +84,8 @@ type GameState
 initModel : Model
 initModel =
     { status = Inactive
-    , board = Debug.todo "Board.new"
+    , board = Board.empty
+    , held = Nothing
     , record = { wins = 0, losses = 0 }
     , clock = Clock.fromInt 0
     }
@@ -101,16 +102,22 @@ addWin : GameHistory -> GameHistory
 addWin record =
     { record | wins = record.wins + 1 }
 
+{-| -}
+setState : GameState -> Model -> Model
+setState newState model =
+    { model | status = newState }
+
 
 ------------------------------------------------------------------------------
 -- Controller
 ------------------------------------------------------------------------------
 
 type Msg
-    = Tick Posix
-    | TogglePause
-    | NewGame GameState
+    = BoardMsg Board.Msg
     | Deal Stack
+    | NewGame GameState
+    | Tick Posix
+    | TogglePause
     | Nil
 
 
@@ -143,6 +150,8 @@ keyDecoder model =
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
     case msg of
+        BoardMsg boardMsg ->
+            handleBoardMsg model boardMsg
         Deal deck ->
             handleDeal model deck
         NewGame status ->
@@ -154,11 +163,23 @@ update msg model =
         _ ->
             (model, Cmd.none)
 
+{-| Board.CardClick -}
+handleBoardMsg : Model -> Board.Msg -> (Model, Cmd Msg)
+handleBoardMsg model boardMsg =
+    let
+        (newBoard, cmd) = Board.update boardMsg model.board
+    in
+        Debug.todo "implement"
 
 {-| Deal < Shenzhen.Deck.Stack > -}
 handleDeal : Model -> Stack -> (Model, Cmd Msg)
 handleDeal model deck =
-    Tuple.pair { model | board = Board.deal deck } Cmd.none
+    let
+        newModel =
+            { model | board = Board.deal deck }
+            |> setState Active
+    in
+        (newModel, Cmd.none)
 
 
 {-| NewGame < GameState > -}
@@ -188,6 +209,8 @@ handleTick model _ =
                 newClock = Clock.advance model.clock Clock.second
             in
                 Tuple.pair { model | clock = newClock } Cmd.none
+        Inactive ->
+            update (NewGame Inactive) model
         _ ->
             (model, Cmd.none)
 
@@ -211,4 +234,27 @@ handleTogglePause model =
 {-| -}
 view : Model -> Html Msg
 view model =
-    Debug.todo "implement"
+    let
+        status = model.status
+        board = model.board
+        record = model.record
+        clock = model.clock
+    in
+        case status of
+            Inactive ->
+                --Debug.todo "render blank board w/ clock"
+                Board.render board
+                |> Html.map BoardMsg
+            Active ->
+                --Debug.todo "render active board w/ clock"
+                Board.render board
+                |> Html.map BoardMsg
+            Paused ->
+                --Debug.todo "render pause menu"
+                Html.text "Implement paused view"
+            Won ->
+                --Debug.todo "render won game screen"
+                Html.text "Implement won view"
+            Lost ->
+                --Debug.todo "render lost game screen"
+                Html.text "Implement lost view"

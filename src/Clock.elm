@@ -8,10 +8,14 @@ module Clock exposing
 
 
 ------------------------------------------------------------------------------
--- Representation
+-- Model
 ------------------------------------------------------------------------------
 
-{-| Represent the components of a duration seperately -}
+{-| Clocks represent time in the standard fashion, tracking milliseconds,
+seconds, minutes, hours, and days, as well as the sum total in milliseconds of
+all these values.
+
+-}
 type alias Clock =
     { ms   : Int  -- milliseconds
     , sec  : Int  -- seconds
@@ -51,7 +55,7 @@ day = 86400000
 -- Creation
 ------------------------------------------------------------------------------
 
-{-| Represent a number of milliseconds as a clock -}
+{-| Represent a given number of milliseconds as a clock. -}
 fromInt : Int -> Clock
 fromInt abs =
     let
@@ -70,7 +74,7 @@ fromInt abs =
 -- Modification
 ------------------------------------------------------------------------------
 
-{-| Advance a clock by a given number of milliseconds -}
+{-| Advance a clock by a given number of milliseconds. -}
 advance : Clock -> Int -> Clock
 advance clock time =
     fromInt (clock.abs + time)

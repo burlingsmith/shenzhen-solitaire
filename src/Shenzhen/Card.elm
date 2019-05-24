@@ -1,10 +1,18 @@
-module Shenzhen.Card exposing (..)
+module Shenzhen.Card exposing
+    ( Card, Suit(..), Face(..)
+    , new
+    , sameSuit, next, nextDiscard, nextStack
+    , blank, toCollage
+    )
 {-| -}
 
 
 ------------------------------------------------------------------------------
 -- Dependencies
 ------------------------------------------------------------------------------
+
+----{ Config
+import Config
 
 ----{ Graphics
 import Color exposing (Color)
@@ -16,14 +24,13 @@ import Html exposing (Html)
 
 
 ------------------------------------------------------------------------------
--- Representation
+-- Constants
 ------------------------------------------------------------------------------
 
-{-| Available Shenzhen card suits -}
-type Suit = Black | Green | Red | Wild
 
-{-| Possible Shenzhen card face values -}
-type Face = Num Int | Dragon | Rose
+------------------------------------------------------------------------------
+-- Model
+------------------------------------------------------------------------------
 
 {-| A Shenzhen card -}
 type Card =
@@ -32,46 +39,11 @@ type Card =
         , value : Face
         }
 
+{-| Available Shenzhen card suits -}
+type Suit = Black | Green | Red | Wild | None
 
-------------------------------------------------------------------------------
--- Constants
-------------------------------------------------------------------------------
-
-{-| Unscaled dimensions of a card in pixels.
-
-Standard playing card dimensions:
-- 2.5 x 3.5 inches (poker size)
-- 2.25 x 3.5 inches (B8 size)
-
-Both sizing schemes typically have a 0.25 inch corner radius.
-
--}
-cardDims : { width : Float, height : Float, cornerRadius : Float }
-cardDims =
-    { width = 225
-    , height = 350
-    , cornerRadius = 25
-    }
-
-{-| Font size used on cards. -}
-fontSize : Int
-fontSize = 42
-
-{-| Background color for cards. -}
-backgroundColor : Color
-backgroundColor = Color.rgb 210 210 200
-
-{-| Border color for cards. -}
-borderColor : Color
-borderColor = Color.black
-
-{-| RGB colors for the various Shenzhen card suits. -}
-suitColors : { black : Color, green : Color, red : Color }
-suitColors =
-    { black = Color.black
-    , green = Color.rgb 59 127 99
-    , red = Color.rgb 175 50 25
-    }
+{-| Possible Shenzhen card face values -}
+type Face = Num Int | Dragon | Rose | Blank
 
 
 ------------------------------------------------------------------------------
@@ -105,6 +77,16 @@ next (Card_ card1) (Card_ card2) =
         _ ->
             False
 
+{-| Determine if card1 can be discarded on top of card2 -}
+nextDiscard : Card -> Card -> Bool
+nextDiscard card1 card2 =
+    (sameSuit card1 card2) && (next card1 card2)
+
+{-| Determine if card1 can be placed on a stack after card2 -}
+nextStack : Card -> Card -> Bool
+nextStack card1 card2 =
+    (not (sameSuit card1 card2)) && (next card2 card1)
+
 
 ------------------------------------------------------------------------------
 -- Composition
@@ -120,27 +102,33 @@ faceToString face =
             "D"
         Rose ->
             "R"
+        Blank ->
+            ""
 
 {-| Convert suit vallues to corresponding colors -}
 suitToColor : Suit -> Color
 suitToColor suit =
     case suit of
         Black ->
-            suitColors.black
+            Config.color.cardBlack
         Green ->
-            suitColors.green
-        _ ->
-            suitColors.red
+            Config.color.cardGreen
+        Red ->
+            Config.color.cardRed
+        Wild ->
+            Config.color.cardWild
+        None ->
+            Config.color.cardBack
 
 {-| -}
 blank : Collage msg
 blank =
     let
-        w = cardDims.width
-        h = cardDims.height
-        r = cardDims.cornerRadius
-        fillStyle = uniform backgroundColor
-        borderStyle = solid thick (uniform borderColor)
+        w = Config.dims.cardWidth
+        h = Config.dims.cardHeight
+        r = Config.dims.cornerRadius
+        fillStyle = uniform Config.color.cardBack
+        borderStyle = solid thick (uniform Config.color.cardBorder)
         style = (fillStyle, borderStyle)
     in
         Collage.styled style (Collage.roundedRectangle w h r)
@@ -151,7 +139,7 @@ toCollage (Card_ card) =
     let
         num =
             Collage.Text.fromString (faceToString card.value)
-            |> Collage.Text.size fontSize
+            |> Collage.Text.size (Config.text.large)
             |> Collage.Text.weight Collage.Text.SemiBold
             |> Collage.Text.color (suitToColor card.suit)
             |> Collage.rendered

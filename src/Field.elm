@@ -1,8 +1,9 @@
 module Field exposing
-    ( Field, Node, NodeTup
+    ( Field, Node
+    , toNode
     , new, fromList
     , set, setSpacing, clear
-    , get, getSpacing, size, nodePos, nodeContent, nodeData
+    , get, getSpacing, size, nodePos, nodeContent, nodeData, getRow, getCol
     , qRender, render
     )
 {-| A uniform grid of nodes to attach Collage graphics to -}
@@ -18,7 +19,7 @@ import Dict exposing (Dict)
 
 ----{ Graphics
 import Collage exposing (Collage)
-import Collage.Layout
+import Collage.Layout exposing (Anchor)
 
 
 ------------------------------------------------------------------------------
@@ -35,10 +36,12 @@ type Field msg data =
 {-| Positioned collage element -}
 type Node msg data
     = E
-    | N { position : Index, content : Collage msg, data : data }
-
-{-| Tuple containing the elements of a node -}
-type alias NodeTup msg data = (Index, Collage msg, data)
+    | N
+        { position : Index       -- Position of the image within the field
+        , content : Collage msg  -- Image to place in the field
+        , anchor : Anchor msg    -- Location the image will be anchored by
+        , data : data            -- Any additional data paired with the image
+        }
 
 {-| -}
 type alias Precedence = Int
@@ -51,9 +54,14 @@ type alias Evaluator msg data = (Node msg data -> Precedence)
 ------------------------------------------------------------------------------
 
 {-| -}
-toNode : Index -> Collage msg -> data -> Node msg data
-toNode pos msg dat =
-    N { position = pos, content = msg, data = dat }
+toNode : Index -> Collage msg -> data -> Anchor msg -> Node msg data
+toNode pos msg dat anchor =
+    N
+        { position = pos
+        , content = msg
+        , anchor = anchor
+        , data = dat
+        }
 
 {-| -}
 getRow : Node msg data -> Maybe Int
@@ -83,7 +91,7 @@ posToIndex (r, c) =
 -- Creation
 ------------------------------------------------------------------------------
 
-{-| -}
+{-| Create a new, empty field with given dimensions and spacing. -}
 new : Dims -> Float -> Maybe (Field msg data)
 new dims spacing =
     case Grid.repeat dims E of
@@ -96,14 +104,14 @@ new dims spacing =
             Nothing
 
 {-| -}
-fromList : Dims -> Float -> List (NodeTup msg data) -> Maybe (Field msg data)
-fromList dims spacing nodeTuples =
+fromList : Dims -> Float -> List (Node msg data) -> Maybe (Field msg data)
+fromList dims spacing nodes =
     let
         blankGrid = new dims spacing
     in
         case blankGrid of
             Just grid ->
-                Just (List.foldl set grid nodeTuples)
+                Just (List.foldl set grid nodes)
             Nothing ->
                 Nothing
 
@@ -113,12 +121,17 @@ fromList dims spacing nodeTuples =
 ------------------------------------------------------------------------------
 
 {-| -}
-set : NodeTup msg data -> Field msg data -> Field msg data
-set (pos, msg, dat) (Field_ field) =
-    let
-        node = toNode pos msg dat
-    in
-        Field_ { field | grid = Grid.set (posToIndex pos) node field.grid }
+set : Node msg data -> Field msg data -> Field msg data
+set node (Field_ field) =
+    case node of
+        E ->
+            (Field_ field)
+        N record ->
+            let
+                grid = field.grid
+                index = (posToIndex record.position)
+            in
+                Field_ { field | grid = Grid.set index node grid }
 
 {-| -}
 setSpacing : Float -> Field msg data -> Field msg data
@@ -207,18 +220,16 @@ render eval (Field_ field) =
     |> Collage.Layout.stack
 
 {-| -}
-renderTup : Float -> NodeTup msg data -> Collage msg
-renderTup spacing (pos, msg, dat) =
-    renderNode spacing (toNode pos msg dat)
-
-{-| -}
 renderNode : Float -> Node msg data -> Collage msg
 renderNode spacing node =
     case node of
         E ->
             Collage.Layout.empty
         N record ->
-            Collage.shift (getShift record.position spacing) record.content
+            let
+                image = Collage.Layout.align record.anchor record.content
+            in
+                Collage.shift (getShift record.position spacing) image
 
 {-| Calculate where to reposition an element -}
 getShift : Index -> Float -> (Float, Float)
