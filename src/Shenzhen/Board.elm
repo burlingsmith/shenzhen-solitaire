@@ -883,8 +883,9 @@ collageButton button =
                     Color.green
                 Red ->
                     Color.darkRed
-        border =
+        style =
             Collage.solid Collage.thick (Collage.uniform Color.black)
+            |> Tuple.pair (Collage.uniform Color.white)
         text =
             case button of
                 Black ->
@@ -901,9 +902,7 @@ collageButton button =
             |> Collage.rendered
     in
         Collage.group
-            [ Collage.circle 32 |> Collage.outlined border
-            , collageText
-            ]
+            [ collageText, Collage.circle 32 |> Collage.styled style ]
 
 
 dummyCard : CardInfo

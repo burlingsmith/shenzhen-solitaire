@@ -268,11 +268,11 @@ handleNewGame model status =
         newModel =
             case status of
                 Won ->
-                    { model | record = addWin model.record }
+                    { initModel | record = addWin model.record }
                 Inactive ->
-                    model
+                    { initModel | record = model.record }
                 _ ->
-                    { model | record = addLoss model.record }
+                    { initModel | record = addLoss model.record }
     in
         (newModel, cmd)
 
