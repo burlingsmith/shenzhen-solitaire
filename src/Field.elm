@@ -6,7 +6,7 @@ module Field exposing
     , get, getSpacing, size, nodePos, nodeContent, nodeData, getRow, getCol
     , qRender, render
     )
-{-| A uniform grid of nodes to attach Collage graphics to -}
+{-| A uniform grid of nodes to attach Collage graphics to. -}
 
 
 ------------------------------------------------------------------------------
@@ -26,14 +26,19 @@ import Collage.Layout exposing (Anchor)
 -- Representation
 ------------------------------------------------------------------------------
 
-{-| -}
+{-| A collection of evenly spaced collage images and associated data.
+
+-}
 type Field msg data =
     Field_
         { grid    : Grid (Node msg data)  -- field of nodes
         , spacing : Float                 -- row/col pixel spacings
         }
 
-{-| Positioned collage element -}
+
+{-| Positioned collage element and associated data.
+
+-}
 type Node msg data
     = E
     | N
@@ -43,17 +48,27 @@ type Node msg data
         , data : data            -- Any additional data paired with the image
         }
 
-{-| -}
+
+{-| Value used to determine rendering order. Lower value layers will be
+rendered on top of greater value layers.
+
+-}
 type alias Precedence = Int
 
-{-| -}
+
+{-| Function prototype for functions used to determine precedence.
+
+-}
 type alias Evaluator msg data = (Node msg data -> Precedence)
+
 
 ------------------------------------------------------------------------------
 -- Utility
 ------------------------------------------------------------------------------
 
-{-| -}
+{-| Create a node from the constituent elements.
+
+-}
 toNode : Index -> Collage msg -> data -> Anchor msg -> Node msg data
 toNode pos msg dat anchor =
     N
@@ -63,7 +78,10 @@ toNode pos msg dat anchor =
         , data = dat
         }
 
-{-| -}
+
+{-| Determine a node's row.
+
+-}
 getRow : Node msg data -> Maybe Int
 getRow node =
     case nodePos node of
@@ -72,7 +90,10 @@ getRow node =
         _ ->
             Nothing
 
-{-| -}
+
+{-| Determine a node's column.
+
+-}
 getCol : Node msg data -> Maybe Int
 getCol node =
     case nodePos node of
@@ -81,7 +102,10 @@ getCol node =
         _ ->
             Nothing
 
-{-| Convert field coordinates to grid coordinates -}
+
+{-| Convert field coordinates to grid coordinates.
+
+-}
 posToIndex : (Int, Int) -> Index
 posToIndex (r, c) =
     (r - 1, c - 1)
@@ -91,7 +115,9 @@ posToIndex (r, c) =
 -- Creation
 ------------------------------------------------------------------------------
 
-{-| Create a new, empty field with given dimensions and spacing. -}
+{-| Create a new, empty field with given dimensions and spacing.
+
+-}
 new : Dims -> Float -> Maybe (Field msg data)
 new dims spacing =
     case Grid.repeat dims E of
@@ -103,7 +129,10 @@ new dims spacing =
         Nothing ->
             Nothing
 
-{-| -}
+
+{-| Generate a field from a list of nodes.
+
+-}
 fromList : Dims -> Float -> List (Node msg data) -> Maybe (Field msg data)
 fromList dims spacing nodes =
     let
@@ -120,7 +149,10 @@ fromList dims spacing nodes =
 -- Modification
 ------------------------------------------------------------------------------
 
-{-| -}
+{-| Set a given node's data in a field. Returns the unaltered field if the
+node's position is invalid.
+
+-}
 set : Node msg data -> Field msg data -> Field msg data
 set node (Field_ field) =
     case node of
@@ -133,12 +165,18 @@ set node (Field_ field) =
             in
                 Field_ { field | grid = Grid.set index node grid }
 
-{-| -}
+
+{-| Set the number of pixels between nodes in a field.
+
+-}
 setSpacing : Float -> Field msg data -> Field msg data
 setSpacing newSpacing (Field_ field) =
     Field_ { field | spacing = newSpacing }
 
-{-| -}
+
+{-| Remove all collage images and data from a field.
+
+-}
 clear : Field msg data -> Index -> Field msg data
 clear (Field_ field) pos =
     Field_ { field | grid = (Grid.set (posToIndex pos) E field.grid) }
@@ -160,17 +198,26 @@ get (Field_ field) pos =
         _ ->
             Nothing
 
-{-| -}
+
+{-| Get the number of pixels between nodes in a field.
+
+-}
 getSpacing : Field msg data -> Float
 getSpacing (Field_ field) =
     field.spacing
 
-{-| -}
+
+{-| Get the number of rows and columns in a field.
+
+-}
 size : Field msg data -> Dims
 size (Field_ field) =
     Grid.size field.grid
 
-{-| -}
+
+{-| Get a node's row and column.
+
+-}
 nodePos : Node msg data -> Maybe Index
 nodePos node =
     case node of
@@ -179,7 +226,10 @@ nodePos node =
         N record ->
             Just record.position
 
-{-| -}
+
+{-| Get a node's collage message.
+
+-}
 nodeContent : Node msg data -> Maybe (Collage msg)
 nodeContent node =
     case node of
@@ -188,7 +238,10 @@ nodeContent node =
         N record ->
             Just record.content
 
-{-| -}
+
+{-| Get a node's associated data.
+
+-}
 nodeData : Node msg data -> Maybe data
 nodeData node =
     case node of
@@ -202,7 +255,9 @@ nodeData node =
 -- Composition
 ------------------------------------------------------------------------------
 
-{-| -}
+{-| Render a field with all nodes set to the same precedence level.
+
+-}
 qRender : Field msg data -> Collage msg
 qRender field =
     let
@@ -210,7 +265,11 @@ qRender field =
     in
         render pFxn field
 
-{-| Lower precedence goes on top -}
+
+{-| Render a field with each node's precedence level calculated by a given
+function.
+
+-}
 render : Evaluator msg data -> Field msg data -> Collage msg
 render eval (Field_ field) =
     Grid.binSort eval field.grid
@@ -219,7 +278,10 @@ render eval (Field_ field) =
     |> Dict.values
     |> Collage.Layout.stack
 
-{-| -}
+
+{-| Render a single node.
+
+-}
 renderNode : Float -> Node msg data -> Collage msg
 renderNode spacing node =
     case node of
@@ -231,7 +293,10 @@ renderNode spacing node =
             in
                 Collage.shift (getShift record.position spacing) image
 
-{-| Calculate where to reposition an element -}
+
+{-| Convert grid position to screen position.
+
+-}
 getShift : Index -> Float -> (Float, Float)
 getShift (row, col) spacing =
     let

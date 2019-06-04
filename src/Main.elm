@@ -9,10 +9,11 @@ module Main exposing (main)
 ----{ Core
 import Browser
 import Html exposing (Html)
+import Html.Attributes
 
 ----{ Structures
-import Shenzhen.Board as Board exposing (Board)
-import Shenzhen.Deck as Deck exposing (Stack)
+import Shenzhen.Board as Board exposing (Board, Stack, CardInfo)
+import Shenzhen.Card as Card exposing (State(..))
 
 ----{ Events
 import Browser.Events
@@ -23,7 +24,15 @@ import Random
 
 ----{ Time
 import Time exposing (Posix)
-import Clock exposing (Clock)
+import Clock exposing (Clock)  -- Clock.toStringHMS
+
+
+------------------------------------------------------------------------------
+-- Constants
+------------------------------------------------------------------------------
+
+tickInterval : Int
+tickInterval = Clock.second // 5
 
 
 ------------------------------------------------------------------------------
@@ -108,17 +117,24 @@ setState newState model =
     { model | status = newState }
 
 
+{-| -}
+setBoard : Model -> Board -> Model
+setBoard model board =
+    { model | board = board }
+
+
 ------------------------------------------------------------------------------
 -- Controller
 ------------------------------------------------------------------------------
 
 type Msg
     = BoardMsg Board.Msg
-    | Deal Stack
+    | BoardGen Board
     | NewGame GameState
     | Tick Posix
     | TogglePause
     | Nil
+    | DebugLoadBoard Board
 
 
 ----{ Subscriptions
@@ -127,7 +143,7 @@ subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch
         [ Browser.Events.onKeyDown (keyDecoder model)
-        , Time.every (toFloat Clock.second) Tick
+        , Time.every (toFloat tickInterval) Tick
         ]
 
 
@@ -139,6 +155,26 @@ keyDecoder model =
                 TogglePause
             else if (key == "r" || key == "R") then
                 NewGame model.status
+            else if (key == "1") then
+                DebugLoadBoard Board.testBoardWin
+            else if (key == "2") then
+                DebugLoadBoard Board.testBoardDragons
+            else if (key == "3") then
+                Debug.todo "debug action"
+            else if (key == "4") then
+                Debug.todo "debug action"
+            else if (key == "5") then
+                Debug.todo "debug action"
+            else if (key == "6") then
+                Debug.todo "debug action"
+            else if (key == "7") then
+                Debug.todo "debug action"
+            else if (key == "8") then
+                Debug.todo "debug action"
+            else if (key == "9") then
+                Debug.todo "debug action"
+            else if (key == "0") then
+                Debug.todo "debug action"
             else
                 Nil
     in
@@ -150,10 +186,14 @@ keyDecoder model =
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
     case msg of
-        BoardMsg boardMsg ->
-            handleBoardMsg model boardMsg
-        Deal deck ->
-            handleDeal model deck
+        BoardMsg (Board.CardClick cardInfo) ->
+            handleCardClick model cardInfo
+        BoardMsg (Board.ButtonPress button) ->
+            handleButtonPress model button
+        BoardGen board ->
+            handleBoardGen model board
+        DebugLoadBoard board ->
+            handleDebugLoadBoard model board
         NewGame status ->
             handleNewGame model status
         Tick posix ->
@@ -163,21 +203,58 @@ update msg model =
         _ ->
             (model, Cmd.none)
 
-{-| Board.CardClick -}
-handleBoardMsg : Model -> Board.Msg -> (Model, Cmd Msg)
-handleBoardMsg model boardMsg =
-    let
-        (newBoard, cmd) = Board.update boardMsg model.board
-    in
-        Debug.todo "implement"
 
-{-| Deal < Shenzhen.Deck.Stack > -}
-handleDeal : Model -> Stack -> (Model, Cmd Msg)
-handleDeal model deck =
+{-| Shenzhen.Board.CardClick < Shenzhen.Board.CardInfo > -}
+handleCardClick : Model -> CardInfo -> (Model, Cmd Msg)
+handleCardClick model cardInfo =
     let
-        newModel =
-            { model | board = Board.deal deck }
-            |> setState Active
+        state = Card.Highlighted
+        zone = cardInfo.zone
+        index = cardInfo.stackIndex
+        depth = cardInfo.cardDepth
+        board = model.board
+    in
+        let
+            newModel =
+                if (Board.holdingCards board) then
+                    Board.attemptDrop board zone index
+                    |> setBoard model
+                else
+                    Board.attemptHold board cardInfo
+                    |> setBoard model
+        in
+            (newModel, Cmd.none)
+
+
+{-| -}
+handleButtonPress : Model -> Board.Button -> (Model, Cmd Msg)
+handleButtonPress model button =
+    let
+        newBoard =
+            case button of
+                Board.Black ->
+                    Board.attemptDragon model.board Card.Black
+                Board.Green ->
+                    Board.attemptDragon model.board Card.Green
+                Board.Red ->
+                    Board.attemptDragon model.board Card.Red
+    in
+        Tuple.pair { model | board = newBoard } Cmd.none
+
+
+{-| ... -}
+handleBoardGen : Model -> Board -> (Model, Cmd Msg)
+handleBoardGen model board =
+    let
+        newModel = setState Active { model | board = board }
+    in
+        (newModel, Cmd.none)
+
+
+{-| DebugLoadBoard < Shenzhen.Board.Board > -}
+handleDebugLoadBoard model board =
+    let
+        newModel = setState Active { initModel | board = board }
     in
         (newModel, Cmd.none)
 
@@ -186,6 +263,8 @@ handleDeal model deck =
 handleNewGame : Model -> GameState -> (Model, Cmd Msg)
 handleNewGame model status =
     let
+        cmd =
+            Random.generate BoardGen (Board.dealGen Board.fullDeck)
         newModel =
             case status of
                 Won ->
@@ -194,10 +273,8 @@ handleNewGame model status =
                     model
                 _ ->
                     { model | record = addLoss model.record }
-        dealCmd =
-            Random.generate Deal (Deck.shuffle Deck.full)
     in
-        (newModel, dealCmd)
+        (newModel, cmd)
 
 
 {-| Tick < Time.Posix > -}
@@ -205,10 +282,14 @@ handleTick : Model -> Posix -> (Model, Cmd Msg)
 handleTick model _ =
     case model.status of
         Active ->
-            let
-                newClock = Clock.advance model.clock Clock.second
-            in
-                Tuple.pair { model | clock = newClock } Cmd.none
+            if Board.winState model.board then
+                (setState Won model, Cmd.none)
+            else
+                let
+                    newClock = Clock.advance model.clock tickInterval
+                in
+                    --Board.scan
+                    Tuple.pair { model | clock = newClock } Cmd.none
         Inactive ->
             update (NewGame Inactive) model
         _ ->
@@ -242,19 +323,38 @@ view model =
     in
         case status of
             Inactive ->
-                --Debug.todo "render blank board w/ clock"
                 Board.render board
                 |> Html.map BoardMsg
             Active ->
-                --Debug.todo "render active board w/ clock"
                 Board.render board
                 |> Html.map BoardMsg
             Paused ->
-                --Debug.todo "render pause menu"
-                Html.text "Implement paused view"
+                Html.div [ Html.Attributes.align "center" ]
+                    [ Html.h1 [] [ Html.text "Game Paused" ]
+                    , Html.h2 [] [ Html.text ("Round Duration: " ++ Clock.toStringHMS clock) ]
+                    , Html.h2 [] [ Html.text <| ("Wins: " ++ String.fromInt model.record.wins) ++ " // Losses: " ++ (String.fromInt model.record.losses) ]
+                    , Html.strong [] [ Html.text "Rules:" ]
+                    , Html.div [] [ Html.text "Shenzhen Solitaire is played in a similar manner to normal Solitaire, with slight variations." ]
+                    , Html.div [] [ Html.text "First, there are only three suits, and cards only range from 1 to 9 (inclusive)." ]
+                    , Html.div [] [ Html.text "Second, there is a rose card, which goes into the leftmost of the upper-right slots." ]
+                    , Html.div [] [ Html.text "Third, there are dragon cards, which are discarded all at once by pressing the correseponding button when all four of a suit are uncovered." ]
+                    , Html.div [] [ Html.text "Fourth, there are wild slots in the upper left, which can hold any single card (unless dragons have been discarded into them)." ]
+                    , Html.br [] []
+                    , Html.strong [] [ Html.text "Controls:" ]
+                    , Html.div [] [ Html.text "Left click to move cards." ]
+                    , Html.div [] [ Html.text "Use 'R' to start a new game." ]
+                    , Html.div [] [ Html.text "Press 'SPACE' or 'ESC' to pause the game." ]
+                    , Html.div [] [ Html.text "Use '1' through '0' for debug actions." ]
+                    ]
             Won ->
-                --Debug.todo "render won game screen"
-                Html.text "Implement won view"
+                Html.div [ Html.Attributes.align "center" ]
+                    [ Html.h1 [] [ Html.text "Congratulations!" ]
+                    , Html.h2 [] [ Html.text "You've won!" ]
+                    , Html.div [] [ Html.text "Press 'R' for a new game." ]
+                    ]
             Lost ->
-                --Debug.todo "render lost game screen"
-                Html.text "Implement lost view"
+                Html.div [ Html.Attributes.align "center" ]
+                    [ Html.h1 [] [ Html.text "Game Over!" ]
+                    , Html.h2 [] [ Html.text "Sorry :/" ]
+                    , Html.div [] [ Html.text "Press 'R' for a new game." ]
+                    ]

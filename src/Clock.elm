@@ -3,19 +3,16 @@ module Clock exposing
     , millisecond, second, minute, hour, day
     , fromInt
     , advance
+    , toStringHMS
     )
-{-| -}
+{-| Representation of a standard, segmented clock in Elm -}
 
 
 ------------------------------------------------------------------------------
 -- Model
 ------------------------------------------------------------------------------
 
-{-| Clocks represent time in the standard fashion, tracking milliseconds,
-seconds, minutes, hours, and days, as well as the sum total in milliseconds of
-all these values.
-
--}
+{-| Clocks track total milliseconds and segmented time units -}
 type alias Clock =
     { ms   : Int  -- milliseconds
     , sec  : Int  -- seconds
@@ -55,7 +52,7 @@ day = 86400000
 -- Creation
 ------------------------------------------------------------------------------
 
-{-| Represent a given number of milliseconds as a clock. -}
+{-| Represent a given number of milliseconds as a clock -}
 fromInt : Int -> Clock
 fromInt abs =
     let
@@ -74,7 +71,20 @@ fromInt abs =
 -- Modification
 ------------------------------------------------------------------------------
 
-{-| Advance a clock by a given number of milliseconds. -}
+{-| Advance a clock by a given number of milliseconds -}
 advance : Clock -> Int -> Clock
 advance clock time =
     fromInt (clock.abs + time)
+
+
+------------------------------------------------------------------------------
+-- Conversion
+------------------------------------------------------------------------------
+
+{-| Convert a clock into a string formatted as "hh:mm:ss" -}
+toStringHMS : Clock -> String
+toStringHMS clock =
+    let
+        f t = String.padLeft 2 '0' (String.fromInt t)
+    in
+        (f clock.hour) ++ ":" ++ (f clock.min) ++ ":" ++ (f clock.sec)
