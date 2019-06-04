@@ -1071,6 +1071,7 @@ qGenS stackStr =
             |> Deck.prepend (qGenC cardStr)
 
 
+{-| A test board for a winning setup -}
 testBoardWin : Board
 testBoardWin =
     let
@@ -1113,6 +1114,7 @@ testBoardWin =
         }
 
 
+{-| A test board for dragon-card operations -}
 testBoardDragons : Board
 testBoardDragons =
     let

@@ -6,7 +6,7 @@ module Extended.List exposing
 List library.
 
 # Single-List Operations
-@docs append
+@docs append, find, ruleFind, replace, delete, remove
 
 # Multi-List Operations
 @docs dealSplit, nWaySplit
