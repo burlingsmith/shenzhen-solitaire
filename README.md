@@ -1,5 +1,7 @@
 # Shenzhen Solitaire
-Mockup of Zachtronics' _SHENZHEN SOLITAIRE_, written in Elm 0.19 and submitted for my functional programming class at the University of Chicago, Spring 2019.
+Mockup of Zachtronics' _SHENZHEN SOLITAIRE_.
+
+Last updated for Elm 0.19.
 
 ## Controls
 - Cards are moved by clicking around.
